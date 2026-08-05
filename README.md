@@ -1,130 +1,115 @@
-# AdonisJS package starter kit
+# @vite-spirite/toon-adonis
 
-> [!note]
-> This starter kit targets **AdonisJS v7**
+Serialize and parse [TOON](https://toonformat.dev) (Token-Oriented Object Notation) directly from your AdonisJS controllers, request payloads, and webhooks.
 
-> A boilerplate for creating AdonisJS packages
+TOON is a compact, LLM-friendly alternative to JSON, designed to reduce token usage when sending structured data to language models. This package wires it natively into AdonisJS's `Response` and `Request` objects, plus an optional middleware for automatic parsing of incoming TOON payloads.
 
-This repo provides you with a starting point for creating AdonisJS packages. Of course, you can create a package from scratch with your folder structure and workflow. However, using this starter kit can speed up the process, as you have fewer decisions to make.
+## Why
 
-## Setup
+If your backend talks to LLMs — sending context, RAG results, database query results, or receiving structured webhook payloads from an AI agent — TOON can meaningfully cut down the number of tokens exchanged compared to raw JSON, especially on tabular/homogeneous data (arrays of objects sharing the same keys).
 
-- Clone the repo on your computer, or use `giget` to download this repo without the Git history.
-  ```sh
-  npx giget@latest gh:adonisjs/pkg-starter-kit
-  ```
-- Install dependencies.
-- Update the `package.json` file and define the `name`, `description`, `keywords`, and `author` properties.
-- The repo is configured with an MIT license. Feel free to change that if you are not publishing under the MIT license.
+This package does **not** replace JSON as your API's default format. It's an opt-in tool for the specific parts of your app that talk to LLMs.
 
-## Folder structure
+## Installation
 
-The starter kit mimics the folder structure of the official packages. Feel free to rename files and folders as per your requirements.
-
-```
-├── providers
-├── src
-├── bin
-├── stubs
-├── configure.ts
-├── index.ts
-├── LICENSE.md
-├── package.json
-├── README.md
-├── tsconfig.json
-├── tsnode.esm.js
+```bash
+npm install @vite-spirite/toon-adonis
+node ace configure @vite-spirite/toon-adonis
 ```
 
-- The `configure.ts` file exports the `configure` hook to configure the package using the `node ace configure` command.
-- The `index.ts` file is the main entry point of the package.
-- The `tsnode.esm.js` file runs TypeScript code using TS-Node + SWC. Please read the code comment in this file to learn more.
-- The `bin` directory contains the entry point file to run Japa tests.
-- Learn more about [the `providers` directory](./providers/README.md).
-- Learn more about [the `src` directory](./src/README.md).
-- Learn more about [the `stubs` directory](./stubs/README.md).
+The configure command will:
+- Register the provider in your `adonisrc.ts`
+- Optionally register the TOON parsing middleware on your router
 
-### File system naming convention
+### Manual step: enable the raw body parser
 
-We use `snake_case` naming conventions for the file system. The rule is enforced using ESLint. However, turn off the rule and use your preferred naming conventions.
+For the middleware to work, AdonisJS needs to be told to expose the raw body for the `application/toon` content type. Add this to your `config/bodyparser.ts`:
 
-## Peer dependencies
+```ts
+raw: {
+  types: ['application/toon'],
+  limit: '1mb',
+  encoding: 'utf-8',
+},
+```
 
-The starter kit has a peer dependency on `@adonisjs/core@6`. Since you are creating a package for AdonisJS, you must make it against a specific version of the framework core.
+## Usage
 
-If your package needs Lucid to be functional, you may install `@adonisjs/lucid` as a development dependency and add it to the list of `peerDependencies`.
+### Sending TOON from a controller
 
-As a rule of thumb, packages installed in the user application should be part of the `peerDependencies` of your package and not the main dependency.
+```ts
+router.get('/users', async ({ response }) => {
+  const users = await User.all()
+  return response.toon(users)
+})
+```
 
-For example, if you install `@adonisjs/core` as a main dependency, then essentially, you are importing a separate copy of `@adonisjs/core` and not sharing the one from the user application. Here is a great article explaining [peer dependencies](https://blog.bitsrc.io/understanding-peer-dependencies-in-javascript-dbdb4ab5a7be).
+This sets `Content-Type: application/toon; charset=utf-8` and encodes the payload.
 
-## Published files
+You can pass any [EncodeOptions](https://www.npmjs.com/package/@toon-format/toon) supported by the underlying library:
 
-Instead of publishing your repo's source code to npm, you must cherry-pick files and folders to publish only the required files.
+```ts
+return response.toon(users, { indent: 4 })
+```
 
-The cherry-picking uses the `files` property inside the `package.json` file. By default, we publish the following files and folders.
+### Receiving TOON automatically (middleware)
 
+If the middleware is registered and the incoming request has `Content-Type: application/toon`, the body is parsed automatically — `request.all()` and `request.body()` behave exactly as they would for JSON.
+
+```ts
+router.post('/webhook', async ({ request }) => {
+  const payload = request.all() // already parsed
+  // ...
+})
+```
+
+### Parsing TOON explicitly
+
+Useful as a fallback when a client (an LLM agent, a misconfigured webhook) sends TOON without setting the correct `Content-Type` header:
+
+```ts
+router.post('/webhook', async ({ request }) => {
+  const payload = request.toon()
+  // ...
+})
+```
+
+`request.toon()` reads the raw body directly, regardless of the `Content-Type` header.
+
+## How much does it actually save?
+
+TOON's efficiency depends heavily on data shape. It performs best on **homogeneous tabular arrays** (same keys across objects) and worse on deeply nested or irregular structures.
+
+On a realistic 10-record tabular payload (gas station data — name, brand, prices, coordinates), TOON produced a **30.3% reduction in tokens** and a **48% reduction in raw character count** compared to equivalent JSON (measured with `gpt-tokenizer`).
+
+**JSON** (476 tokens, 1237 chars):
 ```json
-{
-  "files": [
-    "build/src",
-    "build/providers",
-    "build/stubs",
-    "build/index.d.ts",
-    "build/index.js",
-    "build/configure.d.ts",
-    "build/configure.js"
-  ]
-}
+{"stations":[{"id":1,"name":"Total Villeneuve-d'Ascq","brand":"Total","price_gazole":1.789,"price_sp95":1.859,"lat":50.6293,"lng":3.1345}, ...]}
 ```
 
-If you create additional folders or files, mention them inside the `files` array.
-
-## Exports
-
-[Node.js Subpath exports](https://nodejs.org/api/packages.html#subpath-exports) allows you to define the exports of your package regardless of the folder structure. This starter kit defines the following exports.
-
-```json
-{
-  "exports": {
-    ".": "./build/index.js",
-    "./types": "./build/src/types.js"
-  }
-}
+**TOON** (332 tokens, 643 chars):
+```
+stations[10]{id,name,brand,price_gazole,price_sp95,lat,lng}:
+  1,Total Villeneuve-d'Ascq,Total,1.789,1.859,50.6293,3.1345
+  2,Leclerc Lille,Leclerc,1.699,1.769,50.6365,3.0635
+  ...
 ```
 
-- The dot `.` export is the main export.
-- The `./types` exports all the types defined inside the `./build/src/types.js` file (the compiled output).
+The gain grows with the number of records (the header `{id,name,brand,...}` is written once, not repeated per row) and shrinks on nested or heterogeneous data.
 
-Feel free to change the exports as per your requirements.
+## API
 
-## Testing
+| Method | Description |
+|---|---|
+| `response.toon(data, options?)` | Encodes `data` to TOON and sends it with the correct `Content-Type`. |
+| `request.toon(options?)` | Reads the raw request body and decodes it as TOON. Returns `null` if there's no body. |
+| `encode(data, options?)` | Standalone encode function, exported from the package root. |
+| `decode<T>(payload, options?)` | Standalone decode function, exported from the package root. |
 
-We configure the [Japa test runner](https://japa.dev/) with this starter kit. Japa is used in AdonisJS applications as well. Just run one of the following commands to execute tests.
+## Credits
 
-- `npm run test`: This command will first lint the code using ESlint and then run tests and report the test coverage using [c8](https://github.com/bcoe/c8).
-- `npm run quick:test`: Runs only the tests without linting or coverage reporting.
+Built on top of [@toon-format/toon](https://www.npmjs.com/package/@toon-format/toon) by [johannschopplich](https://github.com/johannschopplich).
 
-The starter kit also has a Github workflow file to run tests using Github Actions. The tests are executed against `Node.js 20.x` and `Node.js 21.x` versions on both Linux and Windows. Feel free to edit the workflow file in the `.github/workflows` directory.
+## License
 
-## TypeScript workflow
-
-- The starter kit uses [tsc](https://www.typescriptlang.org/docs/handbook/compiler-options.html) for compiling the TypeScript to JavaScript when publishing the package.
-- [TS-Node](https://typestrong.org/ts-node/) and [SWC](https://swc.rs/) are used to run tests without compiling the source code.
-- The `tsconfig.json` file is extended from [`@adonisjs/tsconfig`](https://github.com/adonisjs/tooling-config/tree/main/packages/typescript-config) and uses the `NodeNext` module system. Meaning the packages are written using ES modules.
-- You can perform type checking without compiling the source code using the `npm run type check` script.
-
-Feel free to explore the `tsconfig.json` file for all the configured options.
-
-## ESLint and Prettier setup
-
-The starter kit configures ESLint and Prettier
-using our [shared config](https://github.com/adonisjs/tooling-config/tree/main/packages).
-ESLint configuration is stored within the `eslint.config.js` file.
-Prettier configuration is stored within the `package.json` file.
-Feel free to change the configuration, use custom plugins, or remove both tools altogether.
-
-## Using Stale bot
-
-The [Stale bot](https://github.com/apps/stale) is a Github application that automatically marks issues and PRs as stale and closes after a specific duration of inactivity.
-
-Feel free to delete the `.github/stale.yml` and `.github/lock.yml` files if you decide not to use the Stale bot.
+MIT
