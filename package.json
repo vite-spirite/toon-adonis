@@ -1,7 +1,7 @@
 {
-  "name": "toon-adonis",
+  "name": "@vite-spirite/toon-adonis",
   "description": "",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -14,7 +14,9 @@
   "main": "build/index.js",
   "exports": {
     ".": "./build/index.js",
-    "./types": "./build/src/types.js"
+    "./types": "./build/src/types.js",
+    "./toon_provider": "./build/providers/toon_provider.js",
+    "./toon_middleware": "./build/src/toon_middleware.js"
   },
   "scripts": {
     "copy:templates": "copyfiles \"stubs/**/*.stub\" build",
@@ -56,8 +58,8 @@
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@adonisjs/core": "^7.0.0",
-    "@adonisjs/assembler": "^8.0.0"
+    "@adonisjs/assembler": "^8.0.0",
+    "@adonisjs/core": "^7.0.0"
   },
   "peerDependenciesMeta": {
     "@adonisjs/assembler": {
@@ -71,7 +73,9 @@
   "tsdown": {
     "entry": [
       "./index.ts",
-      "./configure.ts"
+      "./configure.ts",
+      "./providers/toon_provider.ts",
+      "./src/toon_middleware.ts"
     ],
     "outDir": "./build",
     "clean": true,
@@ -116,5 +120,8 @@
       "tests/**"
     ]
   },
-  "prettier": "@adonisjs/prettier-config"
+  "prettier": "@adonisjs/prettier-config",
+  "dependencies": {
+    "@toon-format/toon": "^4.1.1"
+  }
 }

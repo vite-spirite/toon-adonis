@@ -14,4 +14,23 @@
 
 import type Configure from '@adonisjs/core/commands/configure'
 
-export async function configure(_command: Configure) {}
+export async function configure(command: Configure) {
+  const codemods = await command.createCodemods()
+
+  await codemods.updateRcFile((rcFile) => {
+    rcFile.addProvider('@vite-spirite/toon-adonis/toon_provider')
+  })
+
+  const shouldAddMiddleware = await command.prompt.confirm(
+    'Voulez-vous enregistrer le middleware TOON automatiquement sur le body parser ?'
+  )
+
+  if (shouldAddMiddleware) {
+    await codemods.registerMiddleware('router', [
+      {
+        path: '@vite-spirite/toon-adonis/toon_middleware',
+        name: 'toon-parser',
+      },
+    ])
+  }
+}
