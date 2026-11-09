@@ -19,7 +19,6 @@
     "./toon_middleware": "./build/src/toon_middleware.js"
   },
   "scripts": {
-    "copy:templates": "copyfiles \"stubs/**/*.stub\" build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -28,7 +27,6 @@
     "test": "c8 npm run quick:test",
     "precompile": "npm run lint",
     "compile": "tsdown && tsc --emitDeclarationOnly --declaration",
-    "postcompile": "npm run copy:templates",
     "build": "npm run compile",
     "release": "release-it",
     "version": "npm run build",
@@ -66,7 +64,6 @@
     "@release-it/conventional-changelog": "^10.0.5",
     "@types/node": "^25.3.5",
     "c8": "^11.0.0",
-    "copyfiles": "^2.4.1",
     "cross-env": "^10.1.0",
     "eslint": "^10.0.3",
     "prettier": "^3.8.1",

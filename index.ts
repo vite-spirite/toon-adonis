@@ -11,4 +11,3 @@ export { encode, decode } from './src/toon_encoder.ts'
 export * from './src/types.ts'
 
 export { configure } from './configure.ts'
-export { stubsRoot } from './stubs/main.ts'
