@@ -54,7 +54,7 @@ return response.toon(users, { indent: 4 })
 
 ### Receiving TOON automatically (middleware)
 
-If the middleware is registered and the incoming request has `Content-Type: application/toon`, the body is parsed automatically — `request.all()` and `request.body()` behave exactly as they would for JSON.
+If the middleware is registered and the incoming request has `Content-Type: application/toon`, the body is parsed automatically — `request.all()` and `request.body()` behave exactly as they would for JSON. Invalid TOON payloads are rejected with a `400 Bad Request` instead of reaching your handler.
 
 ```ts
 router.post('/webhook', async ({ request }) => {
@@ -74,7 +74,7 @@ router.post('/webhook', async ({ request }) => {
 })
 ```
 
-`request.toon()` reads the raw body directly, regardless of the `Content-Type` header.
+`request.toon()` reads the raw body directly, regardless of the `Content-Type` header. It returns `null` when there is no body and throws when the body is not valid TOON.
 
 ## How much does it actually save?
 
@@ -102,9 +102,16 @@ The gain grows with the number of records (the header `{id,name,brand,...}` is w
 | Method | Description |
 |---|---|
 | `response.toon(data, options?)` | Encodes `data` to TOON and sends it with the correct `Content-Type`. |
-| `request.toon(options?)` | Reads the raw request body and decodes it as TOON. Returns `null` if there's no body. |
+| `request.toon(options?)` | Reads the raw request body and decodes it as TOON. Returns `null` if there's no body, throws on invalid TOON. |
 | `encode(data, options?)` | Standalone encode function, exported from the package root. |
 | `decode<T>(payload, options?)` | Standalone decode function, exported from the package root. |
+
+## Releasing
+
+Releases are fully automated:
+
+1. Bump the version locally with `npm run release` (changelog, commit, tag and GitHub release via release-it — it does not publish to npm).
+2. Push the tag (`git push --follow-tags`) — the `release` workflow runs all checks, builds the package, publishes it to npm (with provenance) and creates the GitHub release if one is missing.
 
 ## Credits
 

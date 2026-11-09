@@ -22,7 +22,7 @@ export async function configure(command: Configure) {
   })
 
   const shouldAddMiddleware = await command.prompt.confirm(
-    'Voulez-vous enregistrer le middleware TOON automatiquement sur le body parser ?'
+    'Register the TOON parser middleware on the router automatically?'
   )
 
   if (shouldAddMiddleware) {

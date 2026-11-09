@@ -1,7 +1,7 @@
 {
   "name": "@vite-spirite/toon-adonis",
   "description": "",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -35,7 +35,7 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [],
-  "author": "",
+  "author": "ViteSpirite",
   "license": "MIT",
   "devDependencies": {
     "@adonisjs/assembler": "^8.0.0",
@@ -100,8 +100,7 @@
       "release": true
     },
     "npm": {
-      "publish": true,
-      "skipChecks": true
+      "publish": false
     },
     "plugins": {
       "@release-it/conventional-changelog": {

@@ -6,4 +6,3 @@ coverage
 *.log
 build
 dist
-package-lock.json

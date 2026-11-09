@@ -5,11 +5,17 @@ import type { ApplicationService } from '@adonisjs/core/types'
 
 declare module '@adonisjs/core/http' {
   interface HttpResponse {
-    toon(data: unknown, options?: import('@toon-format/toon').EncodeOptions): void
+    toon(data: unknown, options?: EncodeOptions): void
   }
 
   interface HttpRequest {
-    toon<T = unknown>(options?: import('@toon-format/toon').DecodeOptions): T | null
+    /**
+     * Reads the raw request body and decodes it as TOON.
+     * Returns `null` when there is no body.
+     *
+     * @throws When the body is not valid TOON
+     */
+    toon<T = unknown>(options?: DecodeOptions): T | null
   }
 }
 
@@ -20,15 +26,17 @@ export default class ToonProvider {
     HttpResponse.macro(
       'toon',
       function (this: HttpResponse, data: unknown, options?: EncodeOptions) {
-        this.header('Content-Type', 'application/toon; charset=utf8')
-        return encode(data, options)
+        this.header('Content-Type', 'application/toon; charset=utf-8')
+        this.send(encode(data, options))
       }
     )
 
     HttpRequest.macro('toon', function (this: HttpRequest, options?: DecodeOptions) {
       const raw = this.raw()
 
-      if (raw === null) return null
+      if (raw === null || raw === '') {
+        return null
+      }
 
       return decode(raw, options)
     })

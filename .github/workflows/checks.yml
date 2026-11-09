@@ -13,8 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - name: Install
-        run: npm install
+        run: npm ci
       - name: Run lint
         run: npm run lint
 
@@ -25,8 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - name: Install
-        run: npm install
+        run: npm ci
       - name: Run typecheck
         run: npm run typecheck
 
@@ -42,7 +44,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
       - name: Install
-        run: npm install
+        run: npm ci
       - name: Run tests
         run: npm test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Run build
+        run: npm run build
