@@ -45,6 +45,34 @@ test.group('Toon provider', () => {
 
     assert.throws(() => request.toon())
   })
+
+  test('request.wantsToon reflects the Accept header', ({ assert }) => {
+    const request = new RequestFactory().merge({ url: '/users', method: 'GET' }).create()
+
+    request.header = () => 'application/json, application/toon'
+    assert.isTrue(request.wantsToon())
+
+    request.header = () => 'application/json'
+    assert.isFalse(request.wantsToon())
+
+    request.header = () => undefined
+    assert.isFalse(request.wantsToon())
+  })
+
+  test('response.toon can be chained after response.status', ({ assert }) => {
+    const response = new ResponseFactory().create()
+
+    let sent: unknown
+    response.send = (body: unknown) => {
+      sent = body
+    }
+
+    const data = { users: [{ id: 1 }] }
+    response.status(201).toon(data)
+
+    assert.strictEqual(response.getHeader('Content-Type'), 'application/toon; charset=utf-8')
+    assert.strictEqual(sent, encode(data))
+  })
 })
 
 test.group('Toon middleware', () => {

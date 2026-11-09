@@ -16,6 +16,12 @@ declare module '@adonisjs/core/http' {
      * @throws When the body is not valid TOON
      */
     toon<T = unknown>(options?: DecodeOptions): T | null
+
+    /**
+     * Whether the client accepts TOON responses
+     * (`Accept` header includes `application/toon`)
+     */
+    wantsToon(): boolean
   }
 }
 
@@ -39,6 +45,10 @@ export default class ToonProvider {
       }
 
       return decode(raw, options)
+    })
+
+    HttpRequest.macro('wantsToon', function (this: HttpRequest) {
+      return this.header('Accept')?.includes('application/toon') ?? false
     })
   }
 }

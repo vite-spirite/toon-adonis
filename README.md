@@ -52,6 +52,28 @@ You can pass any [EncodeOptions](https://www.npmjs.com/package/@toon-format/toon
 return response.toon(users, { indent: 4 })
 ```
 
+### Serving TOON only when the client asks for it
+
+Use `request.wantsToon()` to check whether the client's `Accept` header includes `application/toon`, and fall back to JSON otherwise:
+
+```ts
+router.get('/users', async ({ request, response }) => {
+  const users = await User.all()
+
+  if (request.wantsToon()) {
+    return response.toon(users)
+  }
+
+  return users
+})
+```
+
+Need a different status code? `response.toon` chains after `response.status` like any other responder:
+
+```ts
+return response.status(201).toon(user)
+```
+
 ### Receiving TOON automatically (middleware)
 
 If the middleware is registered and the incoming request has `Content-Type: application/toon`, the body is parsed automatically — `request.all()` and `request.body()` behave exactly as they would for JSON. Invalid TOON payloads are rejected with a `400 Bad Request` instead of reaching your handler.
@@ -101,7 +123,8 @@ The gain grows with the number of records (the header `{id,name,brand,...}` is w
 
 | Method | Description |
 |---|---|
-| `response.toon(data, options?)` | Encodes `data` to TOON and sends it with the correct `Content-Type`. |
+| `response.toon(data, options?)` | Encodes `data` to TOON and sends it with the correct `Content-Type`. Chains after `response.status(code)`. |
+| `request.wantsToon()` | Returns `true` when the client's `Accept` header includes `application/toon`. |
 | `request.toon(options?)` | Reads the raw request body and decodes it as TOON. Returns `null` if there's no body, throws on invalid TOON. |
 | `encode(data, options?)` | Standalone encode function, exported from the package root. |
 | `decode<T>(payload, options?)` | Standalone decode function, exported from the package root. |
