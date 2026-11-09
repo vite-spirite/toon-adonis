@@ -1,5 +1,8 @@
 import { test } from '@japa/runner'
 import { ResponseFactory } from '@adonisjs/http-server/factories'
+import { compose } from '@adonisjs/core/helpers'
+import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
+import type { HasMany } from '@adonisjs/lucid/types/relations'
 import { decode, encode } from '../src/toon_encoder.ts'
 import { WithToon, serialize } from '../src/toon_serializer.ts'
 import { bootToonForTests } from './helpers.ts'
@@ -36,6 +39,28 @@ function users() {
     new User(1, 'Alice', 'secret-1', [new Post(1, 'Hello', 1)]),
     new User(2, 'Bob', 'secret-2', [new Post(2, 'World', 2)]),
   ]
+}
+
+class DbPost extends BaseModel {
+  @column({ isPrimary: true })
+  declare id: number
+
+  @column()
+  declare title: string
+}
+
+class DbUser extends compose(BaseModel, WithToon) {
+  @column({ isPrimary: true })
+  declare id: number
+
+  @column()
+  declare name: string
+
+  @column()
+  declare password: string
+
+  @hasMany(() => DbPost)
+  declare posts: HasMany<typeof DbPost>
 }
 
 test.group('Toon serializer', () => {
@@ -131,5 +156,38 @@ test.group('Toon serializer', () => {
       { id: 1, name: 'Alice' },
       { id: 2, name: 'Bob' },
     ])
+  })
+
+  test('serialize throws on self-returning toJSON', ({ assert }) => {
+    const ouroboros: { toJSON: () => unknown } = {
+      toJSON: () => ouroboros,
+    }
+
+    assert.throws(() => serialize(ouroboros), 'Cannot serialize a cyclic structure to TOON')
+  })
+
+  test('serialize works with real Lucid models and preloaded relations', ({ assert }) => {
+    const post = new DbPost()
+    post.fill({ id: 1, title: 'Hello' })
+
+    const user = new DbUser()
+    user.fill({ id: 1, name: 'Alice', password: 'secret-1' })
+    user.$setRelated('posts', [post])
+
+    assert.deepEqual(serialize(user, { except: ['password'] }), {
+      id: 1,
+      name: 'Alice',
+      posts: [{ id: 1, title: 'Hello' }],
+    })
+  })
+
+  test('toToon works on a real Lucid model composed with WithToon', ({ assert }) => {
+    const user = new DbUser()
+    user.fill({ id: 2, name: 'Bob', password: 'secret-2' })
+
+    assert.deepEqual(decode(encode(user.toToon({ only: ['id', 'name'] }))), {
+      id: 2,
+      name: 'Bob',
+    })
   })
 })

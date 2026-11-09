@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.3.0)
+## 0.3.0
 
 - Add `serialize()` and the dependency-free `WithToon` mixin for Lucid models: unwrap via `toJSON()`, preloaded relations included, field filtering with `only`/`except`
 - Add `request.wantsToon()` for `Accept: application/toon` content negotiation (exact media-type match, honors `q=0` refusals)

@@ -38,7 +38,13 @@ function toPlain(value: unknown, seen: WeakSet<object> = new WeakSet()): unknown
   }
 
   if (isToJsonable(value)) {
-    return toPlain(value.toJSON(), seen)
+    if (seen.has(value)) {
+      throw new Error('Cannot serialize a cyclic structure to TOON')
+    }
+    seen.add(value)
+    const result = toPlain(value.toJSON(), seen)
+    seen.delete(value)
+    return result
   }
 
   if (value !== null && typeof value === 'object') {
