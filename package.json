@@ -1,6 +1,6 @@
 {
   "name": "@vite-spirite/toon-adonis",
-  "description": "",
+  "description": "TOON (Token-Oriented Object Notation) serialization for AdonisJS — send token-efficient, LLM-ready payloads from your controllers.",
   "version": "0.2.0",
   "engines": {
     "node": ">=24.0.0"
@@ -34,9 +34,24 @@
     "version": "npm run build",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [],
+  "keywords": [
+    "adonisjs",
+    "toon",
+    "token-oriented-object-notation",
+    "llm",
+    "serialization",
+    "middleware"
+  ],
   "author": "ViteSpirite",
   "license": "MIT",
+  "homepage": "https://github.com/vite-spirite/toon-adonis#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vite-spirite/toon-adonis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vite-spirite/toon-adonis/issues"
+  },
   "devDependencies": {
     "@adonisjs/assembler": "^8.0.0",
     "@adonisjs/core": "^7.0.1",
