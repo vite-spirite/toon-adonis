@@ -1,12 +1,11 @@
 import { test } from '@japa/runner'
 import type { HttpContext } from '@adonisjs/core/http'
-import type { ApplicationService } from '@adonisjs/core/types'
 import { RequestFactory, ResponseFactory } from '@adonisjs/http-server/factories'
-import ToonProvider from '../providers/toon_provider.ts'
 import ToonMiddleware from '../src/toon_middleware.ts'
 import { encode } from '../src/toon_encoder.ts'
+import { bootToonForTests } from './helpers.ts'
 
-new ToonProvider(undefined as unknown as ApplicationService).boot()
+bootToonForTests()
 
 test.group('Toon provider', () => {
   test('response.toon sends encoded TOON with the correct content type', ({ assert }) => {
@@ -54,6 +53,15 @@ test.group('Toon provider', () => {
 
     request.header = () => 'application/json'
     assert.isFalse(request.wantsToon())
+
+    request.header = () => 'application/toonx'
+    assert.isFalse(request.wantsToon())
+
+    request.header = () => 'application/toon;q=0'
+    assert.isFalse(request.wantsToon())
+
+    request.header = () => 'Application/Toon; q=0.5'
+    assert.isTrue(request.wantsToon())
 
     request.header = () => undefined
     assert.isFalse(request.wantsToon())

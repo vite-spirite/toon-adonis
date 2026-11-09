@@ -111,7 +111,7 @@ router.get('/users', async ({ response }) => {
 })
 ```
 
-`only` keeps top-level attributes (applied per item on arrays), `except` drops them afterwards. Any other option is forwarded to the underlying encoder.
+`only` keeps top-level attributes (applied per item on arrays), `except` drops them afterwards. Encoding stays at the response layer: pass the result to `encode()` or `response.toon()`.
 
 Prefer a method on the model? Compose the dependency-free `WithToon` mixin:
 
@@ -156,7 +156,7 @@ The gain grows with the number of records (the header `{id,name,brand,...}` is w
 | `request.toon(options?)` | Reads the raw request body and decodes it as TOON. Returns `null` if there's no body, throws on invalid TOON. |
 | `encode(data, options?)` | Standalone encode function, exported from the package root. |
 | `decode<T>(payload, options?)` | Standalone decode function, exported from the package root. |
-| `serialize(data, options?)` | Unwraps models/collections via `toJSON()` (preloaded relations included), applies `only`/`except` filtering and returns a TOON string. |
+| `serialize(data, options?)` | Unwraps models/collections via `toJSON()` (preloaded relations included), applies `only`/`except` filtering and returns TOON-ready plain data. |
 | `WithToon` | Dependency-free mixin adding a `toToon(options?)` method to Lucid models. |
 
 ## Releasing

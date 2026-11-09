@@ -48,7 +48,26 @@ export default class ToonProvider {
     })
 
     HttpRequest.macro('wantsToon', function (this: HttpRequest) {
-      return this.header('Accept')?.includes('application/toon') ?? false
+      const accept = this.header('Accept')
+
+      if (!accept) {
+        return false
+      }
+
+      return accept
+        .split(',')
+        .map((entry) => entry.trim().toLowerCase())
+        .some((entry) => {
+          const [mediaType, ...params] = entry.split(';').map((part) => part.trim())
+
+          if (mediaType !== 'application/toon') {
+            return false
+          }
+
+          const quality = params.find((param) => param.startsWith('q='))
+
+          return !quality || Number.parseFloat(quality.slice(2)) > 0
+        })
     })
   }
 }

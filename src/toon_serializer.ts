@@ -1,7 +1,4 @@
-import { encode } from './toon_encoder.ts'
-import type { EncodeOptions } from '@toon-format/toon'
-
-export interface ToonSerializeOptions extends EncodeOptions {
+export interface ToonSerializeOptions {
   /**
    * Top-level attributes to keep. Applied to objects and to every
    * item of arrays.
@@ -26,19 +23,34 @@ function isToJsonable(value: unknown): value is { toJSON: () => unknown } {
 /**
  * Converts Lucid models, collections and plain objects to plain data.
  * Anything exposing `toJSON()` (models, collections, preloaded relations)
- * is unwrapped recursively.
+ * is unwrapped recursively. Throws on cyclic structures instead of
+ * overflowing the stack.
  */
-function toPlain(value: unknown): unknown {
+function toPlain(value: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
   if (Array.isArray(value)) {
-    return value.map(toPlain)
+    if (seen.has(value)) {
+      throw new Error('Cannot serialize a cyclic structure to TOON')
+    }
+    seen.add(value)
+    const result = value.map((item) => toPlain(item, seen))
+    seen.delete(value)
+    return result
   }
 
   if (isToJsonable(value)) {
-    return toPlain(value.toJSON())
+    return toPlain(value.toJSON(), seen)
   }
 
   if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, toPlain(item)]))
+    if (seen.has(value)) {
+      throw new Error('Cannot serialize a cyclic structure to TOON')
+    }
+    seen.add(value)
+    const result = Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, toPlain(item, seen)])
+    )
+    seen.delete(value)
+    return result
   }
 
   return value
@@ -81,17 +93,18 @@ function filter(data: unknown, only?: string[], except?: string[]): unknown {
 }
 
 /**
- * Serializes Lucid models, collections or plain data to a TOON string.
- * Preloaded relations are included as nested structures.
+ * Converts Lucid models, collections or plain data to TOON-ready plain data.
+ * Preloaded relations are included as nested structures. Pass the result
+ * to `encode()` or `response.toon()`, which own the TOON encoding.
  *
  * ```ts
  * const users = await User.query().preload('posts')
  * return response.toon(serialize(users, { only: ['id', 'name', 'posts'] }))
  * ```
  */
-export function serialize(data: unknown, options?: ToonSerializeOptions): string {
-  const { only, except, ...encodeOptions } = options ?? {}
-  return encode(filter(toPlain(data), only, except), encodeOptions)
+export function serialize(data: unknown, options?: ToonSerializeOptions): unknown {
+  const { only, except } = options ?? {}
+  return filter(toPlain(data), only, except)
 }
 
 /**
@@ -109,7 +122,7 @@ export function serialize(data: unknown, options?: ToonSerializeOptions): string
  */
 export function WithToon<TBase extends Constructor>(superclass: TBase) {
   class Toonable extends superclass {
-    toToon(options?: ToonSerializeOptions): string {
+    toToon(options?: ToonSerializeOptions): unknown {
       return serialize(this, options)
     }
   }
