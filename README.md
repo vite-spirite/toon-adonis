@@ -98,6 +98,34 @@ router.post('/webhook', async ({ request }) => {
 
 `request.toon()` reads the raw body directly, regardless of the `Content-Type` header. It returns `null` when there is no body and throws when the body is not valid TOON.
 
+### Serializing Lucid models
+
+`serialize()` unwraps models and collections through `toJSON()` — preloaded relations included — and applies field filtering:
+
+```ts
+import { serialize } from '@vite-spirite/toon-adonis'
+
+router.get('/users', async ({ response }) => {
+  const users = await User.query().preload('posts')
+  return response.toon(serialize(users, { only: ['id', 'name', 'posts'] }))
+})
+```
+
+`only` keeps top-level attributes (applied per item on arrays), `except` drops them afterwards. Any other option is forwarded to the underlying encoder.
+
+Prefer a method on the model? Compose the dependency-free `WithToon` mixin:
+
+```ts
+import { compose } from '@adonisjs/core/helpers'
+import { WithToon } from '@vite-spirite/toon-adonis'
+
+export default class User extends compose(BaseModel, WithToon) {}
+
+// ...
+const user = await User.query().preload('posts').firstOrFail()
+return response.toon(user.toToon({ except: ['password'] }))
+```
+
 ## How much does it actually save?
 
 TOON's efficiency depends heavily on data shape. It performs best on **homogeneous tabular arrays** (same keys across objects) and worse on deeply nested or irregular structures.
@@ -128,6 +156,8 @@ The gain grows with the number of records (the header `{id,name,brand,...}` is w
 | `request.toon(options?)` | Reads the raw request body and decodes it as TOON. Returns `null` if there's no body, throws on invalid TOON. |
 | `encode(data, options?)` | Standalone encode function, exported from the package root. |
 | `decode<T>(payload, options?)` | Standalone decode function, exported from the package root. |
+| `serialize(data, options?)` | Unwraps models/collections via `toJSON()` (preloaded relations included), applies `only`/`except` filtering and returns a TOON string. |
+| `WithToon` | Dependency-free mixin adding a `toToon(options?)` method to Lucid models. |
 
 ## Releasing
 
